@@ -15,7 +15,8 @@
 package speedtest
 
 import (
-	"github.com/prometheus/common/log"
+	"log"
+
 	"github.com/showwin/speedtest-go/speedtest"
 )
 
@@ -33,13 +34,13 @@ type Client struct {
 
 // NewClient defines a new client for Speedtest
 func NewClient(configURL string, serversURL string) (*Client, error) {
-	log.Debugf("New Speedtest client %s %s", configURL, serversURL)
+	log.Printf("New Speedtest client %s %s\n", configURL, serversURL)
 
 	user, _ := speedtest.FetchUserInfo()
 
-	log.Debug("Retrieve configuration")
+	log.Println("Retrieve configuration")
 
-	log.Debugf("Retrieve all servers")
+	log.Println("Retrieve all servers")
 	var allServers speedtest.Servers
 	var err error
 
@@ -48,7 +49,7 @@ func NewClient(configURL string, serversURL string) (*Client, error) {
 		return nil, err
 	}
 
-	log.Debugf("Retrieve closest servers")
+	log.Println("Retrieve closest servers")
 
 	//closestServers := speedtest.ByDistance{Servers: allServers}
 
@@ -73,42 +74,42 @@ func (client *Client) NetworkMetrics() map[string]float64 {
 
 	var err error
 
-	log.Info("Latency test")
+	log.Println("Latency test")
 	err = server.PingTest()
 	if err == nil {
-		log.Infof("Latency: %f ms", float64(server.Latency.Milliseconds()))
-		log.Info("Download test")
+		log.Printf("Latency: %f ms\n", float64(server.Latency.Milliseconds()))
+		log.Println("Download test")
 		server.DownloadTest(false)
 	}
 	if err == nil {
-		log.Infof("Download: %f Mbit/s", server.DLSpeed)
-		log.Info("Upload test")
+		log.Printf("Download: %f Mbit/s\n", server.DLSpeed)
+		log.Println("Upload test")
 		server.UploadTest(false)
 	}
 	if err != nil {
-		log.Error(err)
+		log.Println(err)
 		result["download"] = 0
 		result["upload"] = 0
 		result["ping"] = 0
 		return result
 	}
-	log.Infof("Upload: %f Mbit/s", server.ULSpeed)
+	log.Printf("Upload: %f Mbit/s\n", server.ULSpeed)
 
 	// tester := tests.NewTester(client.SpeedtestClient, tests.DefaultDLSizes, tests.DefaultULSizes, false, false)
 	// downloadMbps := tester.Download(client.Server)
-	log.Infof("Speedtest Download: %v Mbps", server.DLSpeed)
+	log.Printf("Speedtest Download: %v Mbps\n", server.DLSpeed)
 	//uploadMbps := tester.Upload(client.Server)
-	log.Infof("Speedtest Upload: %v Mbps", server.ULSpeed)
+	log.Printf("Speedtest Upload: %v Mbps\n", server.ULSpeed)
 
 	//ping, err := client.SpeedtestClient.GetLatency(client.Server, client.SpeedtestClient.GetLatencyURL//(client.Server))
 	//if err != nil {
 	//	log.Fatal(err)
 	//}
 
-	log.Infof("Speedtest Latency: %v ms", server.Latency)
+	log.Printf("Speedtest Latency: %v ms\n", server.Latency)
 	result["download"] = server.DLSpeed
 	result["upload"] = server.ULSpeed
 	result["ping"] = float64(server.Latency.Milliseconds())
-	log.Infof("Speedtest finished")
+	log.Println("Speedtest finished")
 	return result
 }

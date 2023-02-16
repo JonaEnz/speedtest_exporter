@@ -22,9 +22,11 @@ import (
 	"os"
 	"time"
 
+	"log"
+
 	"github.com/dchest/uniuri"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/common/log"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	prom_version "github.com/prometheus/common/version"
 
 	"github.com/nlamirault/speedtest_exporter/speedtest"
@@ -61,13 +63,13 @@ type Exporter struct {
 
 // NewExporter returns an initialized Exporter.
 func NewExporter(config string, server string, interval time.Duration) (*Exporter, error) {
-	log.Infof("Setup Speedtest client with interval %s", interval)
+	log.Printf("Setup Speedtest client with interval %s\n", interval)
 	client, err := speedtest.NewClient(config, server)
 	if err != nil {
-		return nil, fmt.Errorf("Can't create the Speedtest client: %s", err)
+		return nil, fmt.Errorf("can't create the speedtest client: %s", err)
 	}
 
-	log.Debugln("Init exporter")
+	log.Println("Init exporter")
 	return &Exporter{
 		Client: client,
 	}, nil
@@ -85,9 +87,9 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 // as Prometheus metrics.
 // It implements prometheus.Collector.
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
-	log.Infof("Speedtest exporter starting")
+	log.Println("Speedtest exporter starting")
 	if e.Client == nil {
-		log.Errorf("Speedtest client not configured.")
+		log.Println("Speedtest client not configured.")
 		return
 	}
 
@@ -95,7 +97,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(ping, prometheus.GaugeValue, metrics["ping"])
 	ch <- prometheus.MustNewConstMetric(download, prometheus.GaugeValue, metrics["download"])
 	ch <- prometheus.MustNewConstMetric(upload, prometheus.GaugeValue, metrics["upload"])
-	log.Infof("Speedtest exporter finished")
+	log.Println("Speedtest exporter finished")
 }
 
 func init() {
@@ -118,19 +120,19 @@ func main() {
 		os.Exit(0)
 	}
 
-	log.Infoln("Starting speedtest exporter", prom_version.Info())
-	log.Infoln("Build context", prom_version.BuildContext())
+	log.Println("Starting speedtest exporter", prom_version.Info())
+	log.Println("Build context", prom_version.BuildContext())
 
 	interval := 60 * time.Second
 	exporter, err := NewExporter(*configURL, *serverURL, interval)
 	if err != nil {
-		log.Errorf("Can't create exporter : %s", err)
+		log.Printf("Can't create exporter : %s\n", err)
 		os.Exit(1)
 	}
-	log.Infoln("Register exporter")
+	log.Println("Register exporter")
 	prometheus.MustRegister(exporter)
 
-	http.Handle(*metricsPath, prometheus.Handler())
+	http.Handle(*metricsPath, promhttp.Handler())
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`<html>
              <head><title>Speedtest Exporter</title></head>
@@ -141,6 +143,6 @@ func main() {
              </html>`))
 	})
 
-	log.Infoln("Listening on", *listenAddress)
+	log.Printf("Listening on %s...\n", *listenAddress)
 	log.Fatal(http.ListenAndServe(*listenAddress, nil))
 }
