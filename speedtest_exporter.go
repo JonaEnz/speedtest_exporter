@@ -24,13 +24,12 @@ import (
 
 	"log"
 
-	"github.com/dchest/uniuri"
+	"github.com/nlamirault/speedtest_exporter/speedtest_client"
+
+	"github.com/nlamirault/speedtest_exporter/version"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	prom_version "github.com/prometheus/common/version"
-
-	"github.com/nlamirault/speedtest_exporter/speedtest"
-	"github.com/nlamirault/speedtest_exporter/version"
 )
 
 const (
@@ -58,13 +57,19 @@ var (
 // Exporter collects Speedtest stats from the given server and exports them using
 // the prometheus metrics package.
 type Exporter struct {
-	Client *speedtest.Client
+	Client *speedtest_client.Client
 }
 
 // NewExporter returns an initialized Exporter.
-func NewExporter(config string, server string, interval time.Duration) (*Exporter, error) {
+func NewExporter(serverID int, interval time.Duration) (*Exporter, error) {
 	log.Printf("Setup Speedtest client with interval %s\n", interval)
-	client, err := speedtest.NewClient(config, server)
+	var client *speedtest_client.Client
+	var err error
+	if serverID == 0 {
+		client, err = speedtest_client.NewClient()
+	} else {
+		client, err = speedtest_client.NewClientWithFixedId(serverID)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("can't create the speedtest client: %s", err)
 	}
@@ -109,9 +114,11 @@ func main() {
 		showVersion   = flag.Bool("version", false, "Print version information.")
 		listenAddress = flag.String("web.listen-address", ":9112", "Address to listen on for web interface and telemetry.")
 		metricsPath   = flag.String("web.telemetry-path", "/metrics", "Path under which to expose metrics.")
-		configURL     = flag.String("speedtest.config-url", "http://c.speedtest.net/speedtest-config.php?x="+uniuri.New(), "Speedtest configuration URL")
-		serverURL     = flag.String("speedtest.server-url", "http://c.speedtest.net/speedtest-servers-static.php?x="+uniuri.New(), "Speedtest server URL")
-		//interval      = flag.Int("interval", 60*time.Second, "Interval for metrics.")
+		configURL     = flag.String("speedtest.config-url", "", "DEPRECATED!!! Speedtest configuration URL")
+		serverURL     = flag.String("speedtest.server-url", "", "DEPRECATED!!! Speedtest server URL")
+		serverID      = flag.Int("speedtest.server-id", 0, "Speedtest server ID")
+		interval      = flag.Duration("interval", 60*time.Second, "Interval for metrics.")
+		//dataSaveMode
 	)
 	flag.Parse()
 
@@ -122,9 +129,11 @@ func main() {
 
 	log.Println("Starting speedtest exporter", prom_version.Info())
 	log.Println("Build context", prom_version.BuildContext())
+	if *configURL != "" || *serverURL != "" {
+		log.Println("WARNING: config-url and server-url are deprecated. Please use server-id instead.")
+	}
 
-	interval := 60 * time.Second
-	exporter, err := NewExporter(*configURL, *serverURL, interval)
+	exporter, err := NewExporter(*serverID, *interval)
 	if err != nil {
 		log.Printf("Can't create exporter : %s\n", err)
 		os.Exit(1)
