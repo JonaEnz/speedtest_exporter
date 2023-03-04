@@ -11,3 +11,4 @@ speedtest_exporter
 
 # Snap
 *.snap
+*.exe
