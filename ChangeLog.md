@@ -1,6 +1,9 @@
 ChangeLog
 ==============
 
+# Version 0.4.0 (03/14/2023)
+- Use showwin/speedtest-go as old dependency is no longer maintained
+
 # Version 0.3.0 (08/19/2019)
 
 - Use Golang modules for dependencies

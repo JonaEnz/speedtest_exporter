@@ -36,10 +36,9 @@ FROM gcr.io/distroless/base
 
 LABEL summary="Speedtest Prometheus exporter" \
       description="A Prometheus exporter for speedtest" \
-      name="nlamirault/speedtest_exporter" \
-      url="https://github.com/nlamirault/speedtest_exporter" \
-      maintainer="Nicolas Lamirault <nicolas.lamirault@gmail.com>"
-
+      name="JonaEnz/speedtest_exporter" \
+      url="https://github.com/JonaEnz/speedtest_exporter" \
+      maintainer="Jona Enzinger <jona_enzinger@outlook.com>" 
 COPY --from=builder /go/bin/speedtest_exporter /usr/bin/speedtest_exporter
 
 COPY --from=builder /etc/passwd /etc/passwd
