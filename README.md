@@ -1,6 +1,6 @@
 # speedtest_exporter
 
-[![License Apache 2][badge-license]](LICENSE)
+![License](https://img.shields.io/github/license/JonaEnz/speedtest_exporter)
 
 This Prometheus exporter check your network connection. Metrics are :
 
