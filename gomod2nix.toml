@@ -1,0 +1,36 @@
+schema = 3
+
+[mod]
+  [mod."github.com/beorn7/perks"]
+    version = "v1.0.1"
+    hash = "sha256-h75GUqfwJKngCJQVE5Ao5wnO3cfKD9lSIteoLp/3xJ4="
+  [mod."github.com/cespare/xxhash/v2"]
+    version = "v2.2.0"
+    hash = "sha256-nPufwYQfTkyrEkbBrpqM3C2vnMxfIz6tAaBmiUP7vd4="
+  [mod."github.com/golang/protobuf"]
+    version = "v1.5.3"
+    hash = "sha256-svogITcP4orUIsJFjMtp+Uv1+fKJv2Q5Zwf2dMqnpOQ="
+  [mod."github.com/matttproud/golang_protobuf_extensions"]
+    version = "v1.0.4"
+    hash = "sha256-uovu7OycdeZ2oYQ7FhVxLey5ZX3T0FzShaRldndyGvc="
+  [mod."github.com/prometheus/client_golang"]
+    version = "v1.14.0"
+    hash = "sha256-dpgGV8C30ZCn7b9mQ+Ye2AfPXTIuHLQbl2olMKzJKxA="
+  [mod."github.com/prometheus/client_model"]
+    version = "v0.3.0"
+    hash = "sha256-vP+miJfsoK5UG9eug8z/bhAMj3bwg66T2vIh8WHoOKU="
+  [mod."github.com/prometheus/common"]
+    version = "v0.42.0"
+    hash = "sha256-dJqoPZKtY2umWFWwMeRYY9I2JaFlpcMX4atkEcN5+hs="
+  [mod."github.com/prometheus/procfs"]
+    version = "v0.9.0"
+    hash = "sha256-imZN+1HRpMvgmrot2V+AK5ueYLmsp49vZfHtx2N6Wek="
+  [mod."github.com/showwin/speedtest-go"]
+    version = "v1.5.2"
+    hash = "sha256-9jLreb3tEw5bCVka6/BzGbsd5V3+9OHNzENe/IxL1YM="
+  [mod."golang.org/x/sys"]
+    version = "v0.6.0"
+    hash = "sha256-zAgxiTuL24sGhbXrna9R1UYqLQh46ldztpumOScmduY="
+  [mod."google.golang.org/protobuf"]
+    version = "v1.29.1"
+    hash = "sha256-ilSVvttGSP2xpqpoyQ0/Iuyx1WMiwe6GASKTfoeaqxw="
