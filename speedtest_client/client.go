@@ -15,7 +15,7 @@
 package speedtest_client
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/showwin/speedtest-go/speedtest"
 )
@@ -35,21 +35,21 @@ type Client struct {
 // NewClient defines a new client for Speedtest
 func NewClient() (*Client, error) {
 
-	user, _ := speedtest.FetchUserInfo()
-	speedtest.FetchUserInfo()
+	client := speedtest.New()
+	user, _ := client.FetchUserInfo()
 
-	log.Println("Retrieve configuration")
+	fmt.Println("Retrieve configuration")
 
-	log.Println("Retrieve all servers")
+	fmt.Println("Retrieve all servers")
 	var allServers speedtest.Servers
 	var err error
 
-	allServers, err = speedtest.FetchServers(user)
+	allServers, err = client.FetchServers(user)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Println("Retrieve closest servers")
+	fmt.Println("Retrieve closest servers")
 
 	var findServer, _ = allServers.FindServer([]int{})
 
@@ -81,34 +81,35 @@ func (client *Client) NetworkMetrics() map[string]float64 {
 
 	var err error
 
-	log.Println("Latency test")
+	fmt.Println("Latency test")
 	err = server.PingTest()
 	if err == nil {
-		log.Printf("Latency: %f ms\n", float64(server.Latency.Milliseconds()))
-		log.Println("Download test")
+		fmt.Printf("Latency: %f ms\n", float64(server.Latency.Milliseconds()))
+		fmt.Println("Download test")
 		server.DownloadTest()
 	}
 	if err == nil {
-		log.Printf("Download: %f Mbit/s\n", server.DLSpeed)
-		log.Println("Upload test")
+		fmt.Printf("Download: %f Mbit/s\n", server.DLSpeed)
+		fmt.Println("Upload test")
 		server.UploadTest()
 	}
 	if err != nil {
-		log.Println(err)
+		fmt.Println(err)
 		result["download"] = 0
 		result["upload"] = 0
 		result["ping"] = 0
 		return result
 	}
-	log.Printf("Upload: %f Mbit/s\n", server.ULSpeed)
+	fmt.Printf("Upload: %f Mbit/s\n", server.ULSpeed)
 
-	log.Printf("Speedtest Download: %v Mbps\n", server.DLSpeed)
-	log.Printf("Speedtest Upload: %v Mbps\n", server.ULSpeed)
+	fmt.Printf("Speedtest Download: %v Mbps\n", server.DLSpeed)
+	fmt.Printf("Speedtest Upload: %v Mbps\n", server.ULSpeed)
 
-	log.Printf("Speedtest Latency: %v ms\n", server.Latency)
+	fmt.Printf("Speedtest Latency: %v ms\n", server.Latency)
 	result["download"] = server.DLSpeed
 	result["upload"] = server.ULSpeed
 	result["ping"] = float64(server.Latency.Milliseconds())
-	log.Println("Speedtest finished")
+	fmt.Println("Speedtest finished")
+	speedtest.GlobalDataManager.Reset()
 	return result
 }

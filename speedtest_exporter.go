@@ -62,7 +62,7 @@ type Exporter struct {
 
 // NewExporter returns an initialized Exporter.
 func NewExporter(serverID int, interval time.Duration) (*Exporter, error) {
-	log.Printf("Setup Speedtest client with interval %s\n", interval)
+	fmt.Printf("Setup Speedtest client with interval %s\n", interval)
 	var client *speedtest_client.Client
 	var err error
 	if serverID == 0 {
@@ -74,7 +74,7 @@ func NewExporter(serverID int, interval time.Duration) (*Exporter, error) {
 		return nil, fmt.Errorf("can't create the speedtest client: %s", err)
 	}
 
-	log.Println("Init exporter")
+	fmt.Println("Init exporter")
 	return &Exporter{
 		Client: client,
 	}, nil
@@ -92,9 +92,9 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 // as Prometheus metrics.
 // It implements prometheus.Collector.
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
-	log.Println("Speedtest exporter starting")
+	fmt.Println("Speedtest exporter starting")
 	if e.Client == nil {
-		log.Println("Speedtest client not configured.")
+		fmt.Println("Speedtest client not configured.")
 		return
 	}
 
@@ -102,7 +102,6 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(ping, prometheus.GaugeValue, metrics["ping"])
 	ch <- prometheus.MustNewConstMetric(download, prometheus.GaugeValue, metrics["download"])
 	ch <- prometheus.MustNewConstMetric(upload, prometheus.GaugeValue, metrics["upload"])
-	log.Println("Speedtest exporter finished")
 }
 
 func init() {
@@ -127,18 +126,18 @@ func main() {
 		os.Exit(0)
 	}
 
-	log.Println("Starting speedtest exporter", prom_version.Info())
-	log.Println("Build context", prom_version.BuildContext())
+	fmt.Println("Starting speedtest exporter", prom_version.Info())
+	fmt.Println("Build context", prom_version.BuildContext())
 	if *configURL != "" || *serverURL != "" {
-		log.Println("WARNING: config-url and server-url are deprecated. Please use server-id instead.")
+		fmt.Println("WARNING: config-url and server-url are deprecated. Please use server-id instead.")
 	}
 
 	exporter, err := NewExporter(*serverID, *interval)
 	if err != nil {
-		log.Printf("Can't create exporter : %s\n", err)
+		fmt.Printf("Can't create exporter : %s\n", err)
 		os.Exit(1)
 	}
-	log.Println("Register exporter")
+	fmt.Println("Register exporter")
 	prometheus.MustRegister(exporter)
 
 	http.Handle(*metricsPath, promhttp.Handler())
@@ -152,6 +151,6 @@ func main() {
              </html>`))
 	})
 
-	log.Printf("Listening on %s...\n", *listenAddress)
+	fmt.Printf("Listening on %s...\n", *listenAddress)
 	log.Fatal(http.ListenAndServe(*listenAddress, nil))
 }
