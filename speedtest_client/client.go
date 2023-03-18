@@ -107,12 +107,12 @@ func (client *Client) NetworkMetrics() map[string]float64 {
 	if err == nil {
 		fmt.Printf("Latency: %f ms\n", float64(server.Latency.Milliseconds()))
 		fmt.Println("Download test")
-		server.DownloadTest()
+		err = server.DownloadTest()
 	}
 	if err == nil {
 		fmt.Printf("Download: %f Mbit/s\n", server.DLSpeed)
 		fmt.Println("Upload test")
-		server.UploadTest()
+		err = server.UploadTest()
 	}
 	if err != nil {
 		fmt.Println(err)
