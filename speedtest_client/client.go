@@ -16,6 +16,8 @@ package speedtest_client
 
 import (
 	"fmt"
+	"sync"
+	"time"
 
 	"github.com/showwin/speedtest-go/speedtest"
 )
@@ -26,14 +28,18 @@ const (
 
 // Client defines the Speedtest client
 type Client struct {
-	Server          speedtest.Server
-	SpeedtestClient *speedtest.User
-	AllServers      speedtest.Servers
-	ClosestServers  speedtest.Servers
+	Server           speedtest.Server
+	SpeedtestClient  *speedtest.User
+	AllServers       speedtest.Servers
+	ClosestServers   speedtest.Servers
+	mu               sync.Mutex
+	lastResult       *map[string]float64
+	resultValidUntil time.Time
+	resultValidFor   time.Duration
 }
 
 // NewClient defines a new client for Speedtest
-func NewClient() (*Client, error) {
+func NewClient(interval time.Duration) (*Client, error) {
 
 	client := speedtest.New()
 	user, _ := client.FetchUserInfo()
@@ -54,15 +60,19 @@ func NewClient() (*Client, error) {
 	var findServer, _ = allServers.FindServer([]int{})
 
 	return &Client{
-		Server:          *findServer[0],
-		SpeedtestClient: user,
-		AllServers:      allServers,
-		ClosestServers:  allServers,
+		Server:           *findServer[0],
+		SpeedtestClient:  user,
+		AllServers:       allServers,
+		ClosestServers:   allServers,
+		mu:               sync.Mutex{},
+		lastResult:       nil,
+		resultValidUntil: time.UnixMicro(0),
+		resultValidFor:   interval,
 	}, nil
 }
 
-func NewClientWithFixedId(serverId int) (*Client, error) {
-	client, err := NewClient()
+func NewClientWithFixedId(interval time.Duration, serverId int) (*Client, error) {
+	client, err := NewClient(interval)
 	if err != nil {
 		return nil, err
 	}
@@ -75,6 +85,17 @@ func NewClientWithFixedId(serverId int) (*Client, error) {
 }
 
 func (client *Client) NetworkMetrics() map[string]float64 {
+	client.mu.Lock()
+	defer client.mu.Unlock()
+
+	// Check if result is still valid
+	if client.resultValidUntil.Unix() > time.Now().Unix() {
+		validForSeconds := client.resultValidUntil.Sub(time.Now())
+		fmt.Printf("Using cached result, still valid for %s.\n", validForSeconds)
+		return *client.lastResult
+	}
+
+	// Start actual test
 	result := map[string]float64{}
 
 	server := client.Server
@@ -109,7 +130,13 @@ func (client *Client) NetworkMetrics() map[string]float64 {
 	result["download"] = server.DLSpeed
 	result["upload"] = server.ULSpeed
 	result["ping"] = float64(server.Latency.Milliseconds())
-	fmt.Println("Speedtest finished")
+
 	speedtest.GlobalDataManager.Reset()
+	fmt.Println("Speedtest finished")
+
+	// Update cached result
+	client.lastResult = &result
+	client.resultValidUntil = time.Now().Add(client.resultValidFor)
+
 	return result
 }

@@ -66,9 +66,9 @@ func NewExporter(serverID int, interval time.Duration) (*Exporter, error) {
 	var client *speedtest_client.Client
 	var err error
 	if serverID == 0 {
-		client, err = speedtest_client.NewClient()
+		client, err = speedtest_client.NewClient(interval)
 	} else {
-		client, err = speedtest_client.NewClientWithFixedId(serverID)
+		client, err = speedtest_client.NewClientWithFixedId(interval, serverID)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("can't create the speedtest client: %s", err)
@@ -92,7 +92,6 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 // as Prometheus metrics.
 // It implements prometheus.Collector.
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
-	fmt.Println("Speedtest exporter starting")
 	if e.Client == nil {
 		fmt.Println("Speedtest client not configured.")
 		return
@@ -116,8 +115,7 @@ func main() {
 		configURL     = flag.String("speedtest.config-url", "", "DEPRECATED!!! Speedtest configuration URL")
 		serverURL     = flag.String("speedtest.server-url", "", "DEPRECATED!!! Speedtest server URL")
 		serverID      = flag.Int("speedtest.server-id", 0, "Speedtest server ID")
-		interval      = flag.Duration("interval", 60*time.Second, "Interval for metrics.")
-		//dataSaveMode
+		interval      = flag.Duration("interval", 5*time.Minute, "Interval metrics are cached for.")
 	)
 	flag.Parse()
 
