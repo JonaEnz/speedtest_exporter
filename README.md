@@ -1,6 +1,7 @@
 # speedtest_exporter
 
 ![License](https://img.shields.io/github/license/JonaEnz/speedtest_exporter)
+[![Docker](https://github.com/JonaEnz/speedtest_exporter/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/JonaEnz/speedtest_exporter/actions/workflows/docker-publish.yml)
 
 This Prometheus exporter check your network connection. Metrics are :
 
