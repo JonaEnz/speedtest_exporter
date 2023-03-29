@@ -62,7 +62,7 @@ type Exporter struct {
 
 // NewExporter returns an initialized Exporter.
 func NewExporter(serverID int, interval time.Duration) (*Exporter, error) {
-	fmt.Printf("Setup Speedtest client with interval %s\n", interval)
+	log.Printf("Setup Speedtest client with interval %s\n", interval)
 	var client *speedtest_client.Client
 	var err error
 	if serverID == 0 {
@@ -74,7 +74,7 @@ func NewExporter(serverID int, interval time.Duration) (*Exporter, error) {
 		return nil, fmt.Errorf("can't create the speedtest client: %s", err)
 	}
 
-	fmt.Println("Init exporter")
+	log.Println("Init exporter")
 	return &Exporter{
 		Client: client,
 	}, nil
@@ -93,7 +93,7 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 // It implements prometheus.Collector.
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	if e.Client == nil {
-		fmt.Println("Speedtest client not configured.")
+		log.Println("Speedtest client not configured.")
 		return
 	}
 
@@ -120,22 +120,22 @@ func main() {
 	flag.Parse()
 
 	if *showVersion {
-		fmt.Printf("Speedtest Prometheus exporter. v%s\n", version.Version)
+		log.Printf("Speedtest Prometheus exporter. v%s\n", version.Version)
 		os.Exit(0)
 	}
 
-	fmt.Println("Starting speedtest exporter", prom_version.Info())
-	fmt.Println("Build context", prom_version.BuildContext())
+	log.Println("Starting speedtest exporter", prom_version.Info())
+	log.Println("Build context", prom_version.BuildContext())
 	if *configURL != "" || *serverURL != "" {
-		fmt.Println("WARNING: config-url and server-url are deprecated. Please use server-id instead.")
+		log.Println("WARNING: config-url and server-url are deprecated. Please use server-id instead.")
 	}
 
 	exporter, err := NewExporter(*serverID, *interval)
 	if err != nil {
-		fmt.Printf("Can't create exporter : %s\n", err)
+		log.Printf("Can't create exporter : %s\n", err)
 		os.Exit(1)
 	}
-	fmt.Println("Register exporter")
+	log.Println("Register exporter")
 	prometheus.MustRegister(exporter)
 
 	http.Handle(*metricsPath, promhttp.Handler())
@@ -149,6 +149,6 @@ func main() {
              </html>`))
 	})
 
-	fmt.Printf("Listening on %s...\n", *listenAddress)
+	log.Printf("Listening on %s...\n", *listenAddress)
 	log.Fatal(http.ListenAndServe(*listenAddress, nil))
 }
