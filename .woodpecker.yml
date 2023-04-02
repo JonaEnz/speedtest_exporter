@@ -1,0 +1,25 @@
+matrix:
+  PLATFORM:
+    - linux/amd64
+    - linux/arm64
+
+platform: ${PLATFORM}
+
+pipeline:
+  build:
+    image: golang:latest
+    commands:
+      - go get
+      - go build -o out/${PLATFORM}/speedtest_exporter
+  upload:
+    image: woodpeckerci/plugin-s3
+    settings:
+      endpoint: https://minio.woodpecker.jonaenz.de/
+      bucket: woodpecker
+      access_key: Ml1ZmlIGOtZJzSkq
+      secret_key:
+        from_secret: secret_key_minio
+      source: out/**/*
+      target: /speedtest_exporter
+      region: germany-frankfurt-1
+      path_style: true
