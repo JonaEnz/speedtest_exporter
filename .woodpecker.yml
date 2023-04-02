@@ -1,0 +1,24 @@
+matrix:
+  PLATFORM:
+    - linux/amd64
+    - linux/arm64
+
+platform: ${PLATFORM}
+
+pipeline:
+  build:
+    image: golang:latest
+    commands:
+      - PLATFORM_ESC=$(echo "${PLATFORM}" | tr "/" "_")
+      - go get
+      - go build -o "out/speedtest_exporter_$${PLATFORM_ESC}"
+      - ls ./out
+  publish:
+    image: plugins/github-release
+    settings:
+      api_key: 
+        from_secret: github_api
+      files: out/*
+      overwrite: true
+    when:
+      event: tag
