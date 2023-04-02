@@ -9,17 +9,28 @@ pipeline:
   build:
     image: golang:latest
     commands:
+      - PLATFORM_ESC=$(echo "${PLATFORM}" | tr "/" "_")
       - go get
-      - go build -o out/${PLATFORM}/speedtest_exporter
-  upload:
-    image: woodpeckerci/plugin-s3
+      - go build -o "out/speedtest_exporter_$${PLATFORM_ESC}"
+      - ls ./out
+  # upload:
+  #   image: woodpeckerci/plugin-s3
+  #   settings:
+  #     endpoint: https://minio.woodpecker.jonaenz.de/
+  #     bucket: woodpecker
+  #     access_key: Ml1ZmlIGOtZJzSkq
+  #     secret_key:
+  #       from_secret: secret_key_minio
+  #     source: out/**/*
+  #     target: /speedtest_exporter
+  #     region: germany-frankfurt-1
+  #     path_style: true
+  publish:
+    image: plugins/github-release
     settings:
-      endpoint: https://minio.woodpecker.jonaenz.de/
-      bucket: woodpecker
-      access_key: Ml1ZmlIGOtZJzSkq
-      secret_key:
-        from_secret: secret_key_minio
-      source: out/**/*
-      target: /speedtest_exporter
-      region: germany-frankfurt-1
-      path_style: true
+      api_key: 
+        from_secret: github_api
+      files: out/*
+      overwrite: true
+    when:
+      event: tag
