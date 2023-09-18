@@ -15,6 +15,7 @@
 package speedtest_client
 
 import (
+	"errors"
 	"log"
 	"sync"
 	"time"
@@ -39,7 +40,7 @@ type Client struct {
 }
 
 func (client *Client) RefreshFastestServer() error {
-	allServers, err := client.Server.Context.FetchServers(client.SpeedtestClient)
+	allServers, err := client.Server.Context.FetchServers()
 	if err != nil {
 		log.Println("Could not get speedtest servers.")
 		return err
@@ -69,7 +70,7 @@ func NewClient(interval time.Duration) (*Client, error) {
 	var allServers speedtest.Servers
 	var err error
 
-	allServers, err = client.FetchServers(user)
+	allServers, err = client.FetchServers()
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +128,19 @@ func (client *Client) NetworkMetrics() map[string]float64 {
 	var err error
 
 	log.Println("Latency test")
-	err = server.PingTest()
+	ping_chan := make(chan float64)
+	err = server.PingTest(func(latency time.Duration) {
+		ping_chan <- float64(latency.Milliseconds())
+	})
+	if err != nil {
+		select {
+		case <-ping_chan:
+			err = nil
+		case <-time.After(3 * time.Second):
+			//  set err to timeout error
+			err = errors.New("ping test timeout")
+		}
+	}
 	if err == nil {
 		log.Printf("Latency: %f ms\n", float64(server.Latency.Milliseconds()))
 		log.Println("Download test")
@@ -163,4 +176,8 @@ func (client *Client) NetworkMetrics() map[string]float64 {
 	client.resultValidUntil = time.Now().Add(client.resultValidFor)
 
 	return result
+}
+
+func Error(s string) {
+	panic("unimplemented")
 }
