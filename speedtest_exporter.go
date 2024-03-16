@@ -17,17 +17,16 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
-	_ "net/http/pprof"
 	"os"
 	"time"
-
-	"log"
 
 	"github.com/nlamirault/speedtest_exporter/speedtest_client"
 
 	"github.com/nlamirault/speedtest_exporter/version"
 	"github.com/prometheus/client_golang/prometheus"
+	prom_collectors "github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	prom_version "github.com/prometheus/common/version"
 )
@@ -71,7 +70,7 @@ func NewExporter(serverID int, interval time.Duration) (*Exporter, error) {
 		client, err = speedtest_client.NewClientWithFixedId(interval, serverID)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("can't create the speedtest client: %s", err)
+		return nil, fmt.Errorf("can't create the speedtest client: %w\n", err)
 	}
 
 	log.Println("Init exporter")
@@ -97,14 +96,18 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 
-	metrics := e.Client.NetworkMetrics()
-	ch <- prometheus.MustNewConstMetric(ping, prometheus.GaugeValue, metrics["ping"])
-	ch <- prometheus.MustNewConstMetric(download, prometheus.GaugeValue, metrics["download"])
-	ch <- prometheus.MustNewConstMetric(upload, prometheus.GaugeValue, metrics["upload"])
+	metrics, err := e.Client.NetworkMetrics()
+	if err == nil {
+		ch <- prometheus.MustNewConstMetric(ping, prometheus.GaugeValue, metrics["ping"])
+		ch <- prometheus.MustNewConstMetric(download, prometheus.GaugeValue, metrics["download"])
+		ch <- prometheus.MustNewConstMetric(upload, prometheus.GaugeValue, metrics["upload"])
+	} else {
+		log.Printf("Error during speedtest: %v\n", err)
+	}
 }
 
 func init() {
-	prometheus.MustRegister(prom_version.NewCollector("speedtest_exporter"))
+	prometheus.MustRegister(prom_collectors.NewBuildInfoCollector())
 }
 
 func main() {
@@ -112,8 +115,6 @@ func main() {
 		showVersion   = flag.Bool("version", false, "Print version information.")
 		listenAddress = flag.String("web.listen-address", ":9112", "Address to listen on for web interface and telemetry.")
 		metricsPath   = flag.String("web.telemetry-path", "/metrics", "Path under which to expose metrics.")
-		configURL     = flag.String("speedtest.config-url", "", "DEPRECATED!!! Speedtest configuration URL")
-		serverURL     = flag.String("speedtest.server-url", "", "DEPRECATED!!! Speedtest server URL")
 		serverID      = flag.Int("speedtest.server-id", 0, "Speedtest server ID")
 		interval      = flag.Duration("interval", 5*time.Minute, "Interval metrics are cached for.")
 	)
@@ -126,9 +127,6 @@ func main() {
 
 	log.Println("Starting speedtest exporter", prom_version.Info())
 	log.Println("Build context", prom_version.BuildContext())
-	if *configURL != "" || *serverURL != "" {
-		log.Println("WARNING: config-url and server-url are deprecated. Please use server-id instead.")
-	}
 
 	exporter, err := NewExporter(*serverID, *interval)
 	if err != nil {
@@ -140,7 +138,7 @@ func main() {
 
 	http.Handle(*metricsPath, promhttp.Handler())
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`<html>
+		_, _ = w.Write([]byte(`<html>
              <head><title>Speedtest Exporter</title></head>
              <body>
              <h1>Speedtest Exporter</h1>

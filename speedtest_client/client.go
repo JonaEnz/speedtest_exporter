@@ -15,7 +15,6 @@
 package speedtest_client
 
 import (
-	"errors"
 	"log"
 	"sync"
 	"time"
@@ -23,20 +22,16 @@ import (
 	"github.com/showwin/speedtest-go/speedtest"
 )
 
-const (
-	userAgent = "speedtest_exporter"
-)
-
 // Client defines the Speedtest client
 type Client struct {
 	Server           speedtest.Server
+	resultValidUntil time.Time
 	SpeedtestClient  *speedtest.User
+	lastResult       *map[string]float64
 	AllServers       speedtest.Servers
 	ClosestServers   speedtest.Servers
-	mu               sync.Mutex
-	lastResult       *map[string]float64
-	resultValidUntil time.Time
 	resultValidFor   time.Duration
+	mu               sync.Mutex
 }
 
 func (client *Client) RefreshFastestServer() error {
@@ -60,9 +55,9 @@ func (client *Client) RefreshFastestServer() error {
 
 // NewClient defines a new client for Speedtest
 func NewClient(interval time.Duration) (*Client, error) {
-
 	client := speedtest.New()
 	user, _ := client.FetchUserInfo()
+	speedtest.WithUserConfig(&speedtest.UserConfig{UserAgent: "speedtest_exporter v1"})(client)
 
 	log.Println("Retrieve configuration")
 
@@ -77,7 +72,7 @@ func NewClient(interval time.Duration) (*Client, error) {
 
 	log.Println("Retrieve closest servers")
 
-	var findServer, _ = allServers.FindServer([]int{})
+	findServer, _ := allServers.FindServer([]int{})
 	selectedServer := findServer[0]
 	log.Printf("Selected server %s with ID %s\n", selectedServer.Name, selectedServer.ID)
 
@@ -106,57 +101,49 @@ func NewClientWithFixedId(interval time.Duration, serverId int) (*Client, error)
 	return client, nil
 }
 
-func (client *Client) NetworkMetrics() map[string]float64 {
+func (client *Client) NetworkMetrics() (map[string]float64, error) {
 	client.mu.Lock()
 	defer client.mu.Unlock()
 
+	result := map[string]float64{}
 	// Check if result is still valid
 	if client.resultValidUntil.Unix() > time.Now().Unix() {
-		validForSeconds := time.Until(client.resultValidUntil)
-		log.Printf("Using cached result, still valid for %s.\n", validForSeconds)
-		return *client.lastResult
+		validFor := time.Until(client.resultValidUntil)
+		log.Printf("Using cached result, still valid for %s.\n", validFor)
+		return *client.lastResult, nil
 	}
 
 	// Refresh selected client
-	client.RefreshFastestServer()
+	err := client.RefreshFastestServer()
+	if err != nil {
+		log.Printf("Could not refresh fastest server: %v\n", err)
+		return result, err
+	}
 
 	// Start actual test
-	result := map[string]float64{}
-
 	server := client.Server
 
-	var err error
-
 	log.Println("Latency test")
-	ping_chan := make(chan float64)
-	err = server.PingTest(func(latency time.Duration) {
-		ping_chan <- float64(latency.Milliseconds())
-	})
+	err = server.PingTest(nil)
 	if err != nil {
-		select {
-		case <-ping_chan:
-			err = nil
-		case <-time.After(3 * time.Second):
-			//  set err to timeout error
-			err = errors.New("ping test timeout")
-		}
+		return result, err
 	}
-	if err == nil {
-		log.Printf("Latency: %f ms\n", float64(server.Latency.Milliseconds()))
-		log.Println("Download test")
-		err = server.DownloadTest()
+	log.Printf("Latency: %f ms\n", float64(server.Latency.Milliseconds()))
+	log.Println("Download test")
+	err = server.DownloadTest()
+	if err != nil {
+		return result, err
 	}
-	if err == nil {
-		log.Printf("Download: %f Mbit/s\n", server.DLSpeed)
-		log.Println("Upload test")
-		err = server.UploadTest()
-	}
+
+	log.Printf("Download: %f Mbit/s\n", server.DLSpeed)
+	log.Println("Upload test")
+	err = server.UploadTest()
 	if err != nil {
 		log.Println(err)
 		result["download"] = 0
 		result["upload"] = 0
 		result["ping"] = 0
-		return result
+		return result, err
 	}
 	log.Printf("Upload: %f Mbit/s\n", server.ULSpeed)
 
@@ -168,16 +155,12 @@ func (client *Client) NetworkMetrics() map[string]float64 {
 	result["upload"] = server.ULSpeed
 	result["ping"] = float64(server.Latency.Milliseconds())
 
-	speedtest.GlobalDataManager.Reset()
+	server.Context.Reset()
 	log.Println("Speedtest finished")
 
 	// Update cached result
 	client.lastResult = &result
 	client.resultValidUntil = time.Now().Add(client.resultValidFor)
 
-	return result
-}
-
-func Error(s string) {
-	panic("unimplemented")
+	return result, nil
 }
