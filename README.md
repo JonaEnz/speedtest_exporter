@@ -12,7 +12,7 @@ This Prometheus exporter check your network connection. Metrics are :
 
 ## Installation
 
-Build and run the binary using go >= 1.18.
+Build and run the binary using go >= 1.24.
 
 ## Usage
 

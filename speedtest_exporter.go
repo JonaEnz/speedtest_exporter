@@ -22,7 +22,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/nlamirault/speedtest_exporter/speedtest_client"
+	"github.com/nlamirault/speedtest_exporter/speedtestclient"
 
 	"github.com/nlamirault/speedtest_exporter/version"
 	"github.com/prometheus/client_golang/prometheus"
@@ -56,18 +56,18 @@ var (
 // Exporter collects Speedtest stats from the given server and exports them using
 // the prometheus metrics package.
 type Exporter struct {
-	Client *speedtest_client.Client
+	Client *speedtestclient.Client
 }
 
 // NewExporter returns an initialized Exporter.
 func NewExporter(serverID int, interval time.Duration) (*Exporter, error) {
 	log.Printf("Setup Speedtest client with interval %s\n", interval)
-	var client *speedtest_client.Client
+	var client *speedtestclient.Client
 	var err error
 	if serverID == 0 {
-		client, err = speedtest_client.NewClient(interval)
+		client, err = speedtestclient.NewClient(interval)
 	} else {
-		client, err = speedtest_client.NewClientWithFixedId(interval, serverID)
+		client, err = speedtestclient.NewClientWithFixedID(interval, serverID)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("can't create the speedtest client: %w\n", err)

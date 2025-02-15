@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package speedtest_client
+package speedtestclient
 
 import (
 	"log"
+	"math"
 	"sync"
 	"time"
 
@@ -88,12 +89,12 @@ func NewClient(interval time.Duration) (*Client, error) {
 	}, nil
 }
 
-func NewClientWithFixedId(interval time.Duration, serverId int) (*Client, error) {
+func NewClientWithFixedID(interval time.Duration, ServerID int) (*Client, error) {
 	client, err := NewClient(interval)
 	if err != nil {
 		return nil, err
 	}
-	servers, err := (*client).AllServers.FindServer([]int{serverId})
+	servers, err := (*client).AllServers.FindServer([]int{ServerID})
 	if err != nil || len(servers) == 0 {
 		return nil, err
 	}
@@ -135,7 +136,7 @@ func (client *Client) NetworkMetrics() (map[string]float64, error) {
 		return result, err
 	}
 
-	log.Printf("Download: %f Mbit/s\n", server.DLSpeed)
+	log.Printf("Download: %f Mbit/s\n", server.DLSpeed.Mbps())
 	log.Println("Upload test")
 	err = server.UploadTest()
 	if err != nil {
@@ -145,14 +146,14 @@ func (client *Client) NetworkMetrics() (map[string]float64, error) {
 		result["ping"] = 0
 		return result, err
 	}
-	log.Printf("Upload: %f Mbit/s\n", server.ULSpeed)
+	log.Printf("Upload: %f Mbit/s\n", server.ULSpeed.Mbps())
 
-	log.Printf("Speedtest Download: %v Mbps\n", server.DLSpeed)
-	log.Printf("Speedtest Upload: %v Mbps\n", server.ULSpeed)
+	log.Printf("Speedtest Download: %f Mbps\n", server.DLSpeed.Mbps())
+	log.Printf("Speedtest Upload: %f Mbps\n", server.ULSpeed.Mbps())
 
 	log.Printf("Speedtest Latency: %v ms\n", server.Latency)
-	result["download"] = server.DLSpeed
-	result["upload"] = server.ULSpeed
+	result["download"] = math.Floor(server.DLSpeed.Mbps()*100) / 100
+	result["upload"] = math.Floor(server.ULSpeed.Mbps()*100) / 100
 	result["ping"] = float64(server.Latency.Milliseconds())
 
 	server.Context.Reset()

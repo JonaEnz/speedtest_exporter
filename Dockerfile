@@ -1,4 +1,5 @@
 # Copyright (C) 2016-2019 Nicolas Lamirault <nicolas.lamirault@gmail.com>
+# Copyright (C) 2022-2025 Jona Enzinger <jona_enzinger@outlook.com>
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
